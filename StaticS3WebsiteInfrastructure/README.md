@@ -16,7 +16,7 @@ Follow these basic steps:
 2. Click [here](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://cf-templates-h4othlrjdfdl-us-east-1.s3.amazonaws.com/S3_CFD_CFN.yaml&stackName=MyStaticWebsite&param_S3BucketName=notdaydreaminginthecloud&param_DomainNameJoin=Sub-domain.DomainName.TopLevelDomain&param_Route53HostedZoneID=Z07913892L3ZM4E79C0AG) to start the CloudFormation stack wizard – 2 pages open, close the 404 as this is the prelim page 😉 and the 2nd page is the stack template;
     1. ***Ensure the wizard opens in the correct region!*** **US-EAST-1** 
     2. Enter your details for the following parameters:
-        1. S3BucketName - Must be globally unique and comply with other rules;
+        1. S3BucketName - Must be globally unique and comply with other [rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html);
         2. DomainNameJoin *must be in this format:* subdomain.domain.tld;
         3. Route53HostedZoneID *this is the id of the hosted zone from step 1*;
         4. OACforCloudFront *this needs to be unique to your account*
