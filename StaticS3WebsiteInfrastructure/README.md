@@ -1,7 +1,6 @@
 # CloudFormation
  CloudFormation Finalised file:
-
-TemplateBuildImg.png
+Requirements for utilising this quick build is an AWS account and a domain name and access to the registrar domain information.
 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/StaticS3WebsiteInfrastructure/TemplateBuildImg.png "Logo Title Text 1")
 
