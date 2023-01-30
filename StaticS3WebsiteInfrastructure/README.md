@@ -19,7 +19,7 @@ Follow these basic steps:
         2. DomainNameJoin *must be in this format:* subdomain.domain.tld;
         3. Route53HostedZoneID *this is the id of the hosted zone from step 1*;
         4. OACforCloudFront *this needs to be unique to your account*
-    3. Create takes 5-15 mins approx. wait until this is done;
+    3. Create takes 7-15 mins approx. wait until this is done;
 3. Upload your index file into your s3 bucket;
 4. Click in CloudFormation page – Outputs – WebsiteURL *(open it in a new tab or window)* 
 
