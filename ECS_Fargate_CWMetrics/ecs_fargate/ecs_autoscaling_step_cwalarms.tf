@@ -55,16 +55,16 @@ resource "aws_appautoscaling_policy" "scale_up_policy" {
 #   }
 }
 
-# Create the Scale down alarm
-resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
-  alarm_name          = "scale-down-alarm"
+# Create the Scale down alarm with metrics
+resource "aws_cloudwatch_metric_alarm" "scale_down_alarm_w_metrics" {
+  alarm_name          = "scale_down_alarm_w_metrics"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = "2"
   threshold           = "2"
   treat_missing_data = "ignore"
   datapoints_to_alarm = "2" # Out of the 2 evaluation periods, 2 must be in alarm to alarm.
 
-  alarm_description   = "This metric triggers the autoscaling when the CPU drops below 25%"
+  alarm_description   = "This metric triggers the autoscaling when the CPU drops below 25% also has math metrics"
 
   alarm_actions = [aws_appautoscaling_policy.scale_down_policy.arn]
 
@@ -125,5 +125,27 @@ resource "aws_appautoscaling_policy" "scale_down_policy" {
       scaling_adjustment          = -1
       metric_interval_upper_bound = 0
     }
+  }
+}
+
+
+# Create the baseline Scale down alarm without metrics
+resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
+  alarm_name          = "scale-down-alarm"
+  comparison_operator = "LessThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  threshold           = "25"
+  metric_name         = "CPUUtilization"
+  treat_missing_data  = "ignore"
+  datapoints_to_alarm = "2" # Out of the 2 evaluation periods, 2 must be in alarm to alarm.
+  namespace           = "AWS/ECS"
+  period              = "60"
+  statistic           = "Average"
+
+  alarm_description   = "This metric triggers the autoscaling when the CPU drops below 25%"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.lab_ecs_cluster.name
+    ServiceName = aws_ecs_service.lab_fargate_service.name
   }
 }
