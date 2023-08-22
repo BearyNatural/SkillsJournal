@@ -18,12 +18,14 @@ resource "aws_iam_role" "ec2_role" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "EC2DockerProfile"
   role = aws_iam_role.ec2_role.name
+  depends_on = [ aws_iam_role.ec2_role ]
 }
 
 # IAM permissions for ec2
 resource "aws_iam_role_policy" "ec2_policy" {
   name = "EC2DockerPolicy"
   role = aws_iam_role.ec2_role.id
+  depends_on = [ aws_iam_role.ec2_role ]
 
   policy = jsonencode({
     Version = "2012-10-17",
