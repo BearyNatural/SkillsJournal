@@ -11,7 +11,7 @@ resource "aws_appautoscaling_target" "ecs_target" {
 resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   alarm_name          = "scale-up-alarm"
   comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2" 
+  evaluation_periods  = "1" 
   metric_name         = "CPUUtilization"
   namespace           = "AWS/ECS"
   period              = "60"
@@ -19,7 +19,7 @@ resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   threshold           = "75"
   alarm_description   = "This metric triggers the autoscaling when the CPU exceeds 75%"
   treat_missing_data = "ignore"
-  datapoints_to_alarm = "2" # Out of the 2 evaluation periods, 2 must be in alarm to alarm.
+  datapoints_to_alarm = "1" # Out of the 1 evaluation periods, 1 must be in alarm to alarm.
 
   dimensions = {
     ClusterName = aws_ecs_cluster.lab_ecs_cluster.name
@@ -59,10 +59,10 @@ resource "aws_appautoscaling_policy" "scale_up_policy" {
 resource "aws_cloudwatch_metric_alarm" "scale_down_alarm_w_metrics" {
   alarm_name          = "scale_down_alarm_w_metrics"
   comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2"
+  evaluation_periods  = "1"
   threshold           = "2"
   treat_missing_data = "ignore"
-  datapoints_to_alarm = "2" # Out of the 2 evaluation periods, 2 must be in alarm to alarm.
+  datapoints_to_alarm = "1" # Out of the 1 evaluation periods, 1 must be in alarm to alarm.
 
   alarm_description   = "This metric triggers the autoscaling when the CPU drops below 25% also has math metrics"
 
@@ -133,11 +133,11 @@ resource "aws_appautoscaling_policy" "scale_down_policy" {
 resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   alarm_name          = "scale-down-alarm"
   comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods  = "2"
+  evaluation_periods  = "1"
   threshold           = "25"
   metric_name         = "CPUUtilization"
   treat_missing_data  = "ignore"
-  datapoints_to_alarm = "2" # Out of the 2 evaluation periods, 2 must be in alarm to alarm.
+  datapoints_to_alarm = "1" # Out of the 1 evaluation periods, 1 must be in alarm to alarm.
   namespace           = "AWS/ECS"
   period              = "60"
   statistic           = "Average"
