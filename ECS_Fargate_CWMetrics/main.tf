@@ -11,10 +11,11 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   region = "ap-southeast-2"  # ap-southeast-2 
-  alias  = "SYD"
+  alias  = "SYD" #SYD
   default_tags {
     tags = {
-      deployed_by = "BearyNatural"
+      # deployed_by = "BearyNatural"
+      resources_usage = "cx_replication"
     }
   }
 }

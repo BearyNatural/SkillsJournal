@@ -27,7 +27,7 @@ data "aws_ssm_parameter" "ami" {
 # Fetch the current spot price for the desired instance type
 data "aws_ec2_spot_price" "spot_price" {
   instance_type     = var.instancetype
-  availability_zone = "${var.region}a" 
+  availability_zone = "${var.region}a"
   filter {
     name   = "product-description"
     values = ["Linux/UNIX"]
