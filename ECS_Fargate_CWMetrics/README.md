@@ -8,6 +8,9 @@ by Kaylene Howe
 Step 1.
   Ensure you have terraform setup and the correct permissions for terraform to work.  For more information please see [Instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 
+Step 2.
+  
+
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/ECS%20Autoscaling%20Cloudwatch%20Alarms%20with%20metrics.PNG)
 
