@@ -11,9 +11,6 @@ Step 1.
   Please ensure you read through the codes and the scripts.  Get familiar with everything and where each module is.  You can make changes to the code & scripts, changing the region, the desired task count on the CloudWatch Alarm (must still match the ECS AutoScaling policy, so change this also).
 
 Step 2. 
-  This is the point where you get to decide which type of script you want to use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  I used powershell, so by default this is what is in the containers folder.  However, if you want to change the scripts over and use bash, copy all 4 files from the bash folder and paste it over the current files in the container folder.
-
-Step 3.
   Open the CLI in the folder where the 'main.tf' file is.  Now we need to spin up the scipt into your AWS account.  As per terraform documentation use the following commands in order. [Commands](https://developer.hashicorp.com/terraform/cli/commands)
 
   terraform init
@@ -27,11 +24,20 @@ Step 3.
 
   terraform apply --auto-approve
     - this will run the plan and then create or update the infrastructure;
-      If the code errors with 
+      If the code errors with service unavailable, this is a temporary issue that occurs when there are no available spot instances to build the image correctly.  There has however been infrastructure set up.  In this case we need to pull down the infrastructure using this command:
+        terraform destroy --auto-approve
+        - this will destroy previously created infrastructure
+      Essentially you have a few different options.  You can try again, now or later.  Or you can change the AZ the spot instance is created in.  Under the ec2 folder, in the ec2.tf file, on line 30 is where you will find the AZ choice, change it from 'a' to 'b' or 'c'.  Please ensure the region you are spinning the script up in has the AZ.
 
-  terraform destroy --auto-approve
-    - this will destroy previously created infrastructure
+Step 3.
 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/ECS%20Autoscaling%20Cloudwatch%20Alarms%20with%20metrics.PNG)
 
+
+Step .
+  This is the point where you get to decide which type of script you want to use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md in the containers folder.
+
+Step .
+  terraform destroy --auto-approve
+    - this will destroy previously created infrastructure
