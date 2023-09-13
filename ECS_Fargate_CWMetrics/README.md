@@ -1,5 +1,7 @@
 # Proof of Concept: CloudWatch Alarms Utilizing Math Metrics to Optimize AutoScaling Efficiency!
-by :dancing_duck: Kaylene Howe :sunflower:
+by :sunflower: Kaylene Howe :dancing_duck:
+
+---
 
 ## Terraform Scripted:
 In the dynamic realm of cloud infrastructure management, CloudWatch alarms play a crucial role in maintaining efficient and cost-effective operations. Recently, there was a case where a CloudWatch alarm became stuck in an alarm state, while this didn't impact the performance of an ECS cluster it was annoying to the client. 
@@ -30,17 +32,21 @@ Open the CLI in the folder where the 'main.tf' file is.  Now we need to spin up 
       - this will destroy previously created infrastructure.  *Essentially you have a few different options.  You can try again after the destroy, now or later.  Or you can change the AZ the spot instance is created in.  Under the ec2 folder, in the ec2.tf file, on line 30 is where you will find the AZ choice, change it from 'a' to 'b' or 'c'.  Please ensure the region you are spinning the script up in has the AZ.*
 
 ### Step 3.
+You can now see the infrastructure setup in your account.  If you can't see it, double check your region.  Ensure the Tasks are up and running and the alarms have sufficient data.  This may take a few minutes.
 
-![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/ECS%20Autoscaling%20Cloudwatch%20Alarms%20with%20metrics.PNG)
 
+![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
 
-### Step .
-  This is the point where you get to decide which type of script you use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md in the containers folder.
+*Once everything is ready move onto the next step.*
 
+### Step 4.
+This is the point where you get to decide which type of script you use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md.
+* take your time with this step, 
 ### Step .
-  terraform destroy --auto-approve
-    - this will destroy previously created infrastructure
+The best thing about scripts, the ease in which the infrastructure can be pulled down!!
+'terraform destroy --auto-approve'
+  - this will destroy previously created infrastructure
 
 
 # For more information please see the documentation:
