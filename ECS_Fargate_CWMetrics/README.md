@@ -28,7 +28,7 @@ Open the CLI in the folder where the 'main.tf' file is.  Now we need to spin up 
 
 'terraform apply --auto-approve'
   - this will run the plan and then create or update the infrastructure; *If the code errors with service unavailable, this is a temporary issue that occurs when there are no available spot instances to build the image correctly.  There has however been infrastructure set up.  In this case we need to pull down the infrastructure using this command:*
-        'terraform destroy --auto-approve'
+    'terraform destroy --auto-approve'
       - this will destroy previously created infrastructure.  *Essentially you have a few different options.  You can try again after the destroy, now or later.  Or you can change the AZ the spot instance is created in.  Under the ec2 folder, in the ec2.tf file, on line 30 is where you will find the AZ choice, change it from 'a' to 'b' or 'c'.  Please ensure the region you are spinning the script up in has the AZ.*
 
 ### Step 3.
@@ -42,9 +42,11 @@ You can now see the infrastructure setup in your account.  If you can't see it, 
 
 ### Step 4.
 This is the point where you get to decide which type of script you use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md.
-* take your time with this step, 
-### Step .
+*take your time with this step, play to your hearts content*
+
+### Step 5.
 The best thing about scripts, the ease in which the infrastructure can be pulled down!!
+
 'terraform destroy --auto-approve'
   - this will destroy previously created infrastructure
 
@@ -63,4 +65,4 @@ The best thing about scripts, the ease in which the infrastructure can be pulled
     with module.ec2.aws_spot_instance_request.docker_image_builder,
     on ec2\ec2.tf line 43, in resource "aws_spot_instance_request" "docker_image_builder":
     43: resource "aws_spot_instance_request" "docker_image_builder" ...'
-- *The error message you're encountering indicates that there is no available EC2 Spot capacity that matches your request. This means that at the moment you tried to launch your Spot Instance, there were no spare resources available in the Spot pool that met your specified criteria.  To remedy this either change the spot instance to another az and redeploy or just redeploy.*
+- *The error message you're encountering indicates that there are no available EC2 Spot capacity that matches your request. This means that at the moment you tried to launch your Spot Instance, there were no spare resources available in the Spot pool that met your specified criteria.  To remedy this either change the spot instance to another az and redeploy or just redeploy.*
