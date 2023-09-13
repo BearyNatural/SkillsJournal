@@ -37,12 +37,15 @@ You can now see the infrastructure setup in your account.  If you can't see it, 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/ECS%20Autoscaling%20Cloudwatch%20Alarms%20with%20metrics.PNG)
 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
-
 *Once everything is ready move onto the next step.*
 
 ### Step 4.
 This is the point where you get to decide which type of script you use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md.
-*take your time with this step, play to your hearts content*
+*take your time with this step, play to your hearts content.  **Do Note** In a real world scenario, you would not have 2 alarms watching the same metrics as we have with 'scale-down-alarm' & 'scale_down_alarm_w_metrics'.  Usually you would only have one.  I did notice that with both alarms setup, on occassion there seemed to be a lag where one of the alarms was missing data and therefore not going in/out of alarm state.*
+
+![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/Metrics%20-%20scale%20up%20and%20scale%20down.PNG)
+
+At the end your CloudWatch Alarm metrics should show similar to the above graph.  The alarms should be back to 'ok' state with only the scale-down-alarm still 'in alarm' state.  
 
 ### Step 5.
 The best thing about scripts, the ease in which the infrastructure can be pulled down!!
