@@ -3,16 +3,20 @@ by :sunflower: Kaylene Howe :dancing_duck:
 
 ---
 
+
 ## Terraform Scripted:
 In the dynamic realm of cloud infrastructure management, CloudWatch alarms play a crucial role in maintaining efficient and cost-effective operations. Recently, there was a case where a CloudWatch alarm became stuck in an alarm state, while this didn't impact the performance of an ECS cluster it was annoying to the client. 
 In this post, we delve into a proof-of-concept solution that involves the use of math metrics. This solution not only resolved the problem at hand but also promises to enhance ECS AutoScaling processes. Let's dive in and explore the issue of a persistent alarm state to an optimized auto-scaling setup!
 
+
 ---
+
 
 ### Step 1.
 Ensure you have terraform setup and the correct permissions for terraform to work.  For more information please see [Instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 
 *Please ensure you read through the codes and the scripts.  Get familiar with everything and where each module is.  You can make changes to the code & scripts, changing the region, the desired task count on the CloudWatch Alarm (must still match the ECS AutoScaling policy, so change this also).*
+
 
 ### Step 2. 
 Open the CLI in the folder where the 'main.tf' file is.  Now we need to spin up the scipt into your AWS account.  As per terraform documentation use the following commands in order. [Commands](https://developer.hashicorp.com/terraform/cli/commands)
@@ -31,6 +35,7 @@ Open the CLI in the folder where the 'main.tf' file is.  Now we need to spin up 
     'terraform destroy --auto-approve'
       - this will destroy previously created infrastructure.  *Essentially you have a few different options.  You can try again after the destroy, now or later.  Or you can change the AZ the spot instance is created in.  Under the ec2 folder, in the ec2.tf file, on line 30 is where you will find the AZ choice, change it from 'a' to 'b' or 'c'.  Please ensure the region you are spinning the script up in has the AZ.*
 
+
 ### Step 3.
 You can now see the infrastructure setup in your account.  If you can't see it, double check your region.  Ensure the Tasks are up and running and the alarms have sufficient data.  This may take a few minutes.
 
@@ -39,13 +44,18 @@ You can now see the infrastructure setup in your account.  If you can't see it, 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/CloudWatchAlarm%20metrics%20source%20code.PNG)
 *Once everything is ready move onto the next step.*
 
+
 ### Step 4.
 This is the point where you get to decide which type of script you use for stressing the tasks.  In the containers folder there are two folders with scripts, one for powershell, the other for bash.  Make your choice and cd into the folder and follow the instructions in the README.md.
-*take your time with this step, play to your hearts content.  **Do Note** In a real world scenario, you would not have 2 alarms watching the same metrics as we have with 'scale-down-alarm' & 'scale_down_alarm_w_metrics'.  Usually you would only have one.  I did notice that with both alarms setup, on occassion there seemed to be a lag where one of the alarms was missing data and therefore not going in/out of alarm state.*
+
+*take your time with this step, play to your hearts content.*
+
+**Do Note** In a real world scenario, you would not have 2 alarms watching the same metrics as we have with 'scale-down-alarm' & 'scale_down_alarm_w_metrics'.  Usually you would only have one.  I did notice that with both alarms setup, on occassion there seemed to be a lag where one of the alarms was missing data and therefore not going in/out of alarm state.*
 
 ![alt text](https://github.com/BearyNatural/SkillsJournal/blob/main/ECS_Fargate_CWMetrics/Metrics%20-%20scale%20up%20and%20scale%20down.PNG)
 
 At the end your CloudWatch Alarm metrics should show similar to the above graph.  The alarms should be back to 'ok' state with only the scale-down-alarm still 'in alarm' state.  
+
 
 ### Step 5.
 The best thing about scripts, the ease in which the infrastructure can be pulled down!!
@@ -61,6 +71,7 @@ The best thing about scripts, the ease in which the infrastructure can be pulled
   - [CloudWatch Alarm](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html) i.e. Scale up/down [adjustments](https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-simple-step.html)
   - [Math Metric](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Create-alarm-on-metric-math-expression.html) to silence the alarm when policy & alarm have done their job;
 - Paying for the additional metrics, the [container insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html), and cloudwatch log data to take the alarm out of alarm state when the lower bound was reached i.e. cpu under 25% & running task count was on min as per ECS scaling policy [Pricing](https://aws.amazon.com/cloudwatch/pricing/)
+
 
 # Troubleshooting when deploying script
 - if you get this error:
