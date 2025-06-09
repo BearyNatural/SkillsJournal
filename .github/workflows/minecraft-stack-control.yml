@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "Start a stack or stop all?"
+        description: "Start or stop a stack?"
         required: true
         type: choice
         options:
           - start
           - stop
-      stack_to_start:
-        description: "Which stack to start (if action = start)?"
-        required: false
+      stack_name:
+        description: "Which stack to start or stop?"
+        required: true
         type: choice
         options:
           - Bens2ndServer
@@ -38,12 +38,12 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.ACCOUNT_ID }}:role/${{ env.ROLE_NAME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Start selected stack (if action is start)
+      - name: Start selected stack
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
-          echo "Starting stack: ${{ github.event.inputs.stack_to_start }}"
+          echo "Starting stack: ${{ github.event.inputs.stack_name }}"
           aws cloudformation update-stack \
-            --stack-name ${{ github.event.inputs.stack_to_start }} \
+            --stack-name ${{ github.event.inputs.stack_name }} \
             --use-previous-template \
             --parameters ParameterKey=ServerState,ParameterValue=Running \
             --capabilities CAPABILITY_NAMED_IAM
@@ -52,34 +52,44 @@ jobs:
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
           aws cloudformation wait stack-update-complete \
-            --stack-name ${{ github.event.inputs.stack_to_start }}
+            --stack-name ${{ github.event.inputs.stack_name }}
 
       - name: Get Public DNS of started stack
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
-          DNS=$(aws cloudformation describe-stacks \
-            --stack-name ${{ github.event.inputs.stack_to_start }} \
-            --query "Stacks[0].Outputs[?OutputKey=='PublicDNS'].OutputValue" \
+          STACK_NAME="${{ github.event.inputs.stack_name }}"
+          ASG_NAME="${STACK_NAME}-asg"
+
+          echo "Fetching instance ID from ASG: $ASG_NAME"
+          INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names $ASG_NAME \
+            --query 'AutoScalingGroups[0].Instances[0].InstanceId' \
             --output text)
+
+          if [ "$INSTANCE_ID" == "None" ]; then
+            echo "No instance found in ASG: $ASG_NAME"
+            exit 1
+          fi
+
+          DNS=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query 'Reservations[0].Instances[0].PublicDnsName' \
+            --output text)
+
           echo "Minecraft Server is live at: $DNS"
 
-      - name: Stop both stacks (if action is stop)
+      - name: Stop selected stack
         if: ${{ github.event.inputs.action == 'stop' }}
         run: |
-          echo "Stopping both stacks..."
-          for stack in Bens2ndServer testlatestchanges; do
-            echo "Stopping $stack..."
-            aws cloudformation update-stack \
-              --stack-name $stack \
-              --use-previous-template \
-              --parameters ParameterKey=ServerState,ParameterValue=Stopped \
-              --capabilities CAPABILITY_NAMED_IAM
-          done
+          echo "Stopping stack: ${{ github.event.inputs.stack_name }}"
+          aws cloudformation update-stack \
+            --stack-name ${{ github.event.inputs.stack_name }} \
+            --use-previous-template \
+            --parameters ParameterKey=ServerState,ParameterValue=Stopped \
+            --capabilities CAPABILITY_NAMED_IAM
 
       - name: Wait for stop to complete
         if: ${{ github.event.inputs.action == 'stop' }}
         run: |
-          for stack in Bens2ndServer testlatestchanges; do
-            echo "Waiting for $stack to stop..."
-            aws cloudformation wait stack-update-complete --stack-name $stack
-          done
+          aws cloudformation wait stack-update-complete \
+            --stack-name ${{ github.event.inputs.stack_name }}
