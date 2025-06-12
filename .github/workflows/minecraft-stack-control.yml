@@ -54,29 +54,38 @@ jobs:
           aws cloudformation wait stack-update-complete \
             --stack-name ${{ github.event.inputs.stack_name }}
 
-      - name: Get Public DNS of started stack
+      - name: Get Public IP of ECS Fargate task
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
-          STACK_NAME="${{ github.event.inputs.stack_name }}"
-          ASG_NAME="${STACK_NAME}-asg"
-
-          echo "Fetching instance ID from ASG: $ASG_NAME"
-          INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups \
-            --auto-scaling-group-names $ASG_NAME \
-            --query 'AutoScalingGroups[0].Instances[0].InstanceId' \
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ${{ github.event.inputs.stack_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='ECSClusterName'].OutputValue" \
             --output text)
 
-          if [ "$INSTANCE_ID" == "None" ]; then
-            echo "No instance found in ASG: $ASG_NAME"
+          echo "Looking for running task in cluster: $CLUSTER_NAME"
+          TASK_ARN=$(aws ecs list-tasks \
+            --cluster "$CLUSTER_NAME" \
+            --desired-status RUNNING \
+            --query "taskArns[0]" \
+            --output text)
+
+          if [ "$TASK_ARN" == "None" ]; then
+            echo "No running ECS task found."
             exit 1
           fi
 
-          DNS=$(aws ec2 describe-instances \
-            --instance-ids $INSTANCE_ID \
-            --query 'Reservations[0].Instances[0].PublicDnsName' \
+          ENI_ID=$(aws ecs describe-tasks \
+            --cluster "$CLUSTER_NAME" \
+            --tasks "$TASK_ARN" \
+            --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" \
             --output text)
 
-          echo "Minecraft Server is live at: $DNS"
+          PUBLIC_IP=$(aws ec2 describe-network-interfaces \
+            --network-interface-ids "$ENI_ID" \
+            --query "NetworkInterfaces[0].Association.PublicIp" \
+            --output text)
+
+          echo "✅ Minecraft Server is live at IP: $PUBLIC_IP:25565"
 
       - name: Stop selected stack
         if: ${{ github.event.inputs.action == 'stop' }}
