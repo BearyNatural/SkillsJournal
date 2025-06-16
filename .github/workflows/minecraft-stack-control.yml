@@ -86,6 +86,7 @@ jobs:
             --output text)
 
           echo "Minecraft Server is live at IP: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       - name: Notify Discord
         if: ${{ github.event.inputs.action == 'start' }}
