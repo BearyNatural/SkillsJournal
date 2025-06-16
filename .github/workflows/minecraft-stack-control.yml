@@ -91,7 +91,8 @@ jobs:
       - name: Notify Discord
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
-          MSG="Ben's Minecraft Server is live at \`$HOSTNAME ($PUBLIC_IP)\`"
+          HOSTNAME="ec2-${PUBLIC_IP//./-}.ap-southeast-2.compute.amazonaws.com"
+          MSG="Ben's Minecraft Server is live at $PUBLIC_IP \nServer Address: $HOSTNAME"
           echo "Sending to Discord: $MSG"
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"content\": \"$MSG\"}" \
