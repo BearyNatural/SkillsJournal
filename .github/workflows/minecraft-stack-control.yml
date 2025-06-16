@@ -130,8 +130,32 @@ jobs:
             --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}"
 
           echo "Backup task launched. Waiting 30 seconds for it to start..."
-          sleep 30
 
+          # Store task ARN
+          BACKUP_TASK_ARN=$(aws ecs run-task \
+            --cluster "$CLUSTER_NAME" \
+            --launch-type FARGATE \
+            --task-definition "$TASK_DEF_ARN" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}" \
+            --query "tasks[0].taskArn" \
+            --output text)
+
+          # Wait for the backup task to complete
+          echo "Waiting for backup task to finish..."
+          aws ecs wait tasks-stopped \
+            --cluster "$CLUSTER_NAME" \
+            --tasks "$BACKUP_TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "$CLUSTER_NAME" \
+            --tasks "$BACKUP_TASK_ARN" \
+            --query "tasks[0].containers[0].exitCode" \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Backup task failed with exit code $EXIT_CODE"
+            exit 1
+          fi
 
       - name: Stop selected stack
         if: ${{ github.event.inputs.action == 'stop' }}
