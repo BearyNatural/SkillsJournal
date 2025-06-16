@@ -98,6 +98,40 @@ jobs:
             -d "{\"content\": \"$MSG\"}" \
             ${{ secrets.DISCORD_WEBHOOK_URL }}
 
+      - name: Run ECS Backup Task
+        if: ${{ github.event.inputs.action == 'stop' }}
+        run: |
+          echo "Running ECS backup task for stack: ${{ github.event.inputs.stack_name }}"
+
+          CLUSTER_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ${{ github.event.inputs.stack_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='ECSClusterName'].OutputValue" \
+            --output text)
+
+          TASK_DEF_ARN=$(aws ecs describe-task-definition \
+            --task-definition MinecraftBackupTask \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+
+          SUBNET_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ github.event.inputs.stack_name }} \
+            --query "Stacks[0].Outputs[?OutputKey=='MinecraftPublicAccess'].OutputValue" \
+            --output text)
+
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=${{ github.event.inputs.stack_name }}-ec2" \
+            --query "SecurityGroups[0].GroupId" \
+            --output text)
+
+          aws ecs run-task \
+            --cluster "$CLUSTER_NAME" \
+            --launch-type FARGATE \
+            --task-definition "$TASK_DEF_ARN" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}"
+
+          echo "Backup task launched. Waiting 30 seconds for it to start..."
+          sleep 30
+
 
       - name: Stop selected stack
         if: ${{ github.event.inputs.action == 'stop' }}
