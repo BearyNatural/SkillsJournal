@@ -85,12 +85,12 @@ jobs:
             --query "NetworkInterfaces[0].Association.PublicIp" \
             --output text)
 
-          echo "✅ Minecraft Server is live at IP: $PUBLIC_IP"
+          echo "Minecraft Server is live at IP: $PUBLIC_IP"
 
       - name: Notify Discord
         if: ${{ github.event.inputs.action == 'start' }}
         run: |
-          MSG="🎮 Minecraft Server is live at \`$PUBLIC_IP\`"
+          MSG="Ben's Minecraft Server is live at \`$PUBLIC_IP\`"
           echo "Sending to Discord: $MSG"
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"content\": \"$MSG\"}" \
