@@ -16,7 +16,7 @@ on:
         type: choice
         options:
           - Bens2ndServer
-          - testlatestchanges
+          - Bensmclatest
 
 permissions:
   id-token: write
