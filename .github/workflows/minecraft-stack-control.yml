@@ -16,7 +16,7 @@ on:
         type: choice
         options:
           - Bens2ndServer
-          - Bensmclatest
+          - kaysminecraftserver
 
 permissions:
   id-token: write
