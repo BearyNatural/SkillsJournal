@@ -1,0 +1,27 @@
+apiVersion: karpenter.sh/v1beta1
+kind: Provisioner
+metadata:
+  name: default
+spec:
+  # Cluster endpoint and name will be automatically discovered if running within EKS.
+  # Otherwise, specify them here
+  # cluster:
+  #   name: karpenter
+  #   endpoint: <your-cluster-endpoint>
+  amiFamily: AL2
+  amiSelectorTerms:
+    - architecture: amd64
+      ami: <ami-id-for-amd64>
+    - architecture: arm
+      ami: <ami-id-for-arm64>
+  # You can define other requirements here as needed, such as instance type, zones, etc.
+  requirements:
+    - key: "kubernetes.io/arch"
+      operator: In
+      values: ["amd64", "arm64"]
+  provider: 
+    subnetSelector:
+      karpenter.sh/discovery: ${CLUSTER_NAME}
+    securityGroupSelector:
+      karpenter.sh/discovery: ${CLUSTER_NAME}
+  ttlSecondsAfterEmpty: 300

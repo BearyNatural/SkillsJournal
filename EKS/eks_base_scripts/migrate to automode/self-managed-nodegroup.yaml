@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Self-managed node group for EKS
+
+Parameters:
+  ClusterName:
+    Type: String
+  NodeInstanceType:
+    Type: String
+    Default: t3.medium
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Description: EKS-optimized AMI ID 
+  NodeSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security Group to attach to the worker nodes
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: ''
+    Description: Optional SSH key pair name (leave empty to skip)
+
+Resources:
+  NodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ ec2.amazonaws.com ]
+            Action: [ sts:AssumeRole ]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [ !Ref NodeInstanceRole ]
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref AmiId
+        InstanceType: !Ref NodeInstanceType
+        IamInstanceProfile:
+          Name: !Ref NodeInstanceProfile
+        SecurityGroupIds:
+          - !Ref NodeSecurityGroupId
+        MetadataOptions:
+          HttpTokens: required
+          HttpPutResponseHopLimit: 2
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            /etc/eks/bootstrap.sh ${ClusterName}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub ${ClusterName}-node
+              - Key: kubernetes.io/cluster/${ClusterName}
+                Value: owned
+
+  NodeGroupASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref Subnets
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: 1
+      MaxSize: 3
+      DesiredCapacity: 1
+      Tags:
+        - Key: Name
+          Value: !Sub ${ClusterName}-asg
+          PropagateAtLaunch: true
+        - Key: kubernetes.io/cluster/${ClusterName}
+          Value: owned
+          PropagateAtLaunch: true
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 1
+        PauseTime: PT5M
+        SuspendProcesses: [ HealthCheck, ReplaceUnhealthy ]
+        WaitOnResourceSignals: false
+
+Outputs:
+  NodeRoleArn:
+    Description: IAM role for worker nodes
+    Value: !GetAtt NodeInstanceRole.Arn
+  InstanceProfileName:
+    Description: Instance profile name attached to worker nodes
+    Value: !Ref NodeInstanceProfile
+  LaunchTemplateId:
+    Value: !Ref LaunchTemplate
+  AutoScalingGroupName:
+    Value: !Ref NodeGroupASG

@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# ================= USER INPUT =================
+CLUSTER_NAME="ubuntu-ec2-cluster"
+TASK_NAME="ubuntu-sleep-task"
+REGION="us-west-2"
+SUBNET_ID="subnet-09a449e00e5082040"
+SECURITY_GROUP_ID="sg-0a838f5fce1734842"
+KEY_PAIR_NAME="chefuserOregon"
+INSTANCE_TYPE="t3.micro"
+# =============================================
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# 1. Create ECS Cluster
+echo "Creating ECS cluster: $CLUSTER_NAME"
+aws ecs create-cluster --cluster-name $CLUSTER_NAME --region $REGION
+
+# 2. Create IAM Role (if not exists)
+echo "Checking ECS instance role..."
+if ! aws iam get-role --role-name ecsInstanceRole &>/dev/null; then
+  echo "Creating IAM role ecsInstanceRole..."
+  aws iam create-role \
+    --role-name ecsInstanceRole \
+    --assume-role-policy-document '{
+      "Version": "2012-10-17",
+      "Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Service": "ec2.amazonaws.com"},
+        "Action": "sts:AssumeRole"
+      }]
+    }'
+
+  aws iam attach-role-policy \
+    --role-name ecsInstanceRole \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+else
+  echo "IAM role ecsInstanceRole already exists. Skipping creation."
+fi
+
+# 3. Create Instance Profile (if not exists)
+echo "Checking ECS instance profile..."
+if ! aws iam get-instance-profile --instance-profile-name ecsInstanceProfile &>/dev/null; then
+  echo "Creating instance profile ecsInstanceProfile..."
+  aws iam create-instance-profile --instance-profile-name ecsInstanceProfile
+  aws iam add-role-to-instance-profile \
+    --instance-profile-name ecsInstanceProfile \
+    --role-name ecsInstanceRole
+  echo "Waiting 10 seconds for instance profile propagation..."
+  sleep 10
+else
+  echo "Instance profile ecsInstanceProfile already exists. Skipping creation."
+fi
+
+# 4. Get ECS-optimized Amazon Linux 2 AMI
+echo "Finding latest ECS-optimized Amazon Linux 2 AMI..."
+AMI_ID=$(aws ssm get-parameters \
+  --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended \
+  --region $REGION \
+  --query "Parameters[0].Value" \
+  --output text | jq -r .image_id)
+
+echo "Using AMI: $AMI_ID"
+
+# 5. Launch EC2 Instance with ECS agent
+echo "Launching ECS host EC2 instance..."
+USERDATA=$(base64 <<EOF
+#!/bin/bash
+echo ECS_CLUSTER=$CLUSTER_NAME >> /etc/ecs/ecs.config
+EOF
+)
+
+aws ec2 run-instances \
+  --image-id $AMI_ID \
+  --count 1 \
+  --instance-type $INSTANCE_TYPE \
+  --key-name $KEY_PAIR_NAME \
+  --iam-instance-profile Name=ecsInstanceProfile \
+  --network-interfaces "DeviceIndex=0,SubnetId=$SUBNET_ID,AssociatePublicIpAddress=true,Groups=$SECURITY_GROUP_ID" \
+  --user-data "$USERDATA" \
+  --region $REGION
+
+# 6. Register Task Definition with ubuntu:latest
+echo "Registering ECS task definition using ubuntu:latest..."
+aws ecs register-task-definition \
+  --family $TASK_NAME \
+  --requires-compatibilities EC2 \
+  --network-mode bridge \
+  --cpu "256" \
+  --memory "512" \
+  --container-definitions "[
+    {
+      \"name\": \"ubuntu-sleeper\",
+      \"image\": \"ubuntu:latest\",
+      \"command\": [\"sleep\", \"7200\"],
+      \"essential\": true
+    }
+  ]" \
+  --region $REGION
+
+# 7. Wait for EC2 instance to register with ECS
+echo "Waiting 60 seconds for ECS instance to register..."
+sleep 60
+
+# 8. Run the Task
+echo "Running ECS task on EC2 cluster..."
+aws ecs run-task \
+  --cluster $CLUSTER_NAME \
+  --launch-type EC2 \
+  --task-definition $TASK_NAME \
+  --region $REGION
+

@@ -1,0 +1,284 @@
+aws ecs create-cluster --cluster-name cxrep
+
+aws iam create-role --role-name ecsserviceELBRole --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ecs.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}'
+
+aws iam attach-role-policy --role-name ecsserviceELBRole --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+--- 
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "ECSTaskManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:AttachNetworkInterface",
+                    "ec2:CreateNetworkInterface",
+                    "ec2:CreateNetworkInterfacePermission",
+                    "ec2:DeleteNetworkInterface",
+                    "ec2:DeleteNetworkInterfacePermission",
+                    "ec2:Describe*",
+                    "ec2:DetachNetworkInterface",
+                    "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                    "elasticloadbalancing:DeregisterTargets",
+                    "elasticloadbalancing:Describe*",
+                    "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                    "elasticloadbalancing:RegisterTargets",
+                    "route53:ChangeResourceRecordSets",
+                    "route53:CreateHealthCheck",
+                    "route53:DeleteHealthCheck",
+                    "route53:Get*",
+                    "route53:List*",
+                    "route53:UpdateHealthCheck",
+                    "servicediscovery:DeregisterInstance",
+                    "servicediscovery:Get*",
+                    "servicediscovery:List*",
+                    "servicediscovery:RegisterInstance",
+                    "servicediscovery:UpdateInstanceCustomHealthStatus"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "AutoScaling",
+                "Effect": "Allow",
+                "Action": [
+                    "autoscaling:Describe*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "AutoScalingManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "autoscaling:DeletePolicy",
+                    "autoscaling:PutScalingPolicy",
+                    "autoscaling:SetInstanceProtection",
+                    "autoscaling:UpdateAutoScalingGroup",
+                    "autoscaling:PutLifecycleHook",
+                    "autoscaling:DeleteLifecycleHook",
+                    "autoscaling:CompleteLifecycleAction",
+                    "autoscaling:RecordLifecycleActionHeartbeat"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "Null": {
+                        "autoscaling:ResourceTag/AmazonECSManaged": "false"
+                    }
+                }
+            },
+            {
+                "Sid": "AutoScalingPlanManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "autoscaling-plans:CreateScalingPlan",
+                    "autoscaling-plans:DeleteScalingPlan",
+                    "autoscaling-plans:DescribeScalingPlans",
+                    "autoscaling-plans:DescribeScalingPlanResources"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "EventBridge",
+                "Effect": "Allow",
+                "Action": [
+                    "events:DescribeRule",
+                    "events:ListTargetsByRule"
+                ],
+                "Resource": "arn:aws:events:*:*:rule/ecs-managed-*"
+            },
+            {
+                "Sid": "EventBridgeRuleManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "events:PutRule",
+                    "events:PutTargets"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {
+                        "events:ManagedBy": "ecs.amazonaws.com"
+                    }
+                }
+            },
+            {
+                "Sid": "CWAlarmManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "cloudwatch:DeleteAlarms",
+                    "cloudwatch:DescribeAlarms",
+                    "cloudwatch:PutMetricAlarm"
+                ],
+                "Resource": "arn:aws:cloudwatch:*:*:alarm:*"
+            },
+            {
+                "Sid": "ECSTagging",
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:CreateTags"
+                ],
+                "Resource": "arn:aws:ec2:*:*:network-interface/*"
+            },
+            {
+                "Sid": "CWLogGroupManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:DescribeLogGroups",
+                    "logs:PutRetentionPolicy"
+                ],
+                "Resource": "arn:aws:logs:*:*:log-group:/aws/ecs/*"
+            },
+            {
+                "Sid": "CWLogStreamManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogStream",
+                    "logs:DescribeLogStreams",
+                    "logs:PutLogEvents"
+                ],
+                "Resource": "arn:aws:logs:*:*:log-group:/aws/ecs/*:log-stream:*"
+            },
+            {
+                "Sid": "ExecuteCommandSessionManagement",
+                "Effect": "Allow",
+                "Action": [
+                    "ssm:DescribeSessions"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "ExecuteCommand",
+                "Effect": "Allow",
+                "Action": [
+                    "ssm:StartSession"
+                ],
+                "Resource": [
+                    "arn:aws:ecs:*:*:task/*",
+                    "arn:aws:ssm:*:*:document/AmazonECS-ExecuteInteractiveCommand"
+                ]
+            },
+            {
+                "Sid": "CloudMapResourceCreation",
+                "Effect": "Allow",
+                "Action": [
+                    "servicediscovery:CreateHttpNamespace",
+                    "servicediscovery:CreateService"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "ForAllValues:StringEquals": {
+                        "aws:TagKeys": [
+                            "AmazonECSManaged"
+                        ]
+                    }
+                }
+            },
+            {
+                "Sid": "CloudMapResourceTagging",
+                "Effect": "Allow",
+                "Action": "servicediscovery:TagResource",
+                "Resource": "*",
+                "Condition": {
+                    "StringLike": {
+                        "aws:RequestTag/AmazonECSManaged": "*"
+                    }
+                }
+            },
+            {
+                "Sid": "CloudMapResourceDeletion",
+                "Effect": "Allow",
+                "Action": [
+                    "servicediscovery:DeleteService"
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "Null": {
+                        "aws:ResourceTag/AmazonECSManaged": "false"
+                    }
+                }
+            },
+            {
+                "Sid": "CloudMapResourceDiscovery",
+                "Effect": "Allow",
+                "Action": [
+                    "servicediscovery:DiscoverInstances",
+                    "servicediscovery:DiscoverInstancesRevision"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+---
+
+aws elbv2 create-load-balancer \
+    --name test2 \
+    --subnets subnet-098627b4e349ccd23 subnet-0a9a592878d3dae43 \
+    --security-groups sg-068c075e2973df009 \
+    --scheme internet-facing \
+    --type application \
+    --ip-address-type ipv4
+
+aws elbv2 create-target-group \
+    --name test3 \
+    --protocol HTTP \
+    --port 80 \
+    --vpc-id vpc-029b142767ce50181 \
+    --health-check-protocol HTTP \
+    --health-check-path / \
+    --target-type ip
+
+aws elbv2 create-target-group \
+    --name test4 \
+    --protocol HTTP \
+    --port 80 \
+    --vpc-id vpc-029b142767ce50181 \
+    --health-check-protocol HTTP \
+    --health-check-path / \
+    --target-type ip
+
+aws elbv2 create-listener \
+    --load-balancer-arn arn:aws:elasticloadbalancing:ap-southeast-2:$ACCOUNT_ID:loadbalancer/app/test2/5845b8553e81b51d \
+    --protocol HTTP \
+    --port 80 \
+    --default-actions Type=forward,TargetGroupArn=arn:aws:elasticloadbalancing:ap-southeast-2:$ACCOUNT_ID:targetgroup/test3/28e44257bcfdfcb7
+
+aws elbv2 create-rule \
+    --listener-arn arn:aws:elasticloadbalancing:ap-southeast-2:$ACCOUNT_ID:listener/app/test2/5845b8553e81b51d/7805384498bf42c8 \
+    --priority 10 \
+    --conditions Field=path-pattern,Values='/path2/*' \
+    --actions Type=forward,TargetGroupArn=arn:aws:elasticloadbalancing:ap-southeast-2:$ACCOUNT_ID:targetgroup/test4/2e407b84868ebae9
+
+    https://docs.aws.amazon.com/AmazonECS/latest/developerguide/register-multiple-targetgroups.html
+
+
+    aws ecs update-service \
+    --cluster bmctest-cluster \
+    --service bmctest-service \
+    --task-definition bmctest-task:7 \
+    --load-balancers '[{"targetGroupArn":"arn:aws:elasticloadbalancing:ap-southeast-2:$ACCOUNT_ID:targetgroup/test3/28e44257bcfdfcb7","containerName":"minecraft","containerPort":80}, {"targetGroupArn":"arn:aws:elasticloadbalancing:ap-southeast-2:550104813352:targetgroup/test4/2e407b84868ebae9","containerName":"backup-sidecar","containerPort":80}]' \
+    --network-configuration "awsvpcConfiguration={subnets=[subnet-098627b4e349ccd23,subnet-0a9a592878d3dae43],securityGroups=[sg-068c075e2973df009],assignPublicIp=ENABLED}" \
+    --desired-count 1 \
+    --debug \
+    --launch-type FARGATE
+
+
+    aws ecs create-service \
+    --cluster cxrep \
+    --service-name testing \
+    --task-definition fargate-task-definition:2 \
+    --desired-count 1 \
+    --launch-type FARGATE \
+    --role arn:aws:iam::$ACCOUNT_ID:role/ecsserviceELBRole \
+    --network-configuration "awsvpcConfiguration={subnets=[subnet-098627b4e349ccd23,subnet-0a9a592878d3dae43],securityGroups=[sg-068c075e2973df009],assignPublicIp=ENABLED}"
+    --debug 

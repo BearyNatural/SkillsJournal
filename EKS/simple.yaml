@@ -1,0 +1,31 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: simpleitl
+  region: us-east-2
+  version: "1.28"
+managedNodeGroups:
+  - name: mng
+    privateNetworking: true
+    desiredCapacity: 2
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 3
+    minSize: 0
+    volumeSize: 20
+    # ssh:
+    #   allow: true
+    #   publicKeyPath: RemoteLinuxKey.pem
+iam:
+  withOIDC: true
+iamIdentityMappings:
+  - arn: arn:aws:iam::$ACC:role/Admin
+    groups:
+      - system:masters
+    username: kayhowe-Isengard
+    noDuplicateARNs: true
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+      - "*"

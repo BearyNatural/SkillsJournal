@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: simple-webapp-colour
+  labels: 
+    name: simple-webapp-colour
+spec:
+  containers:
+  - name: simple-webapp-colour
+    image: simple-webapp-colour
+    ports:
+      - containerPort: 8080
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: 1
+      limits:
+        memory: "2Gi"
+        cpu: 2

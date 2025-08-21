@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-2
+  labels:
+    env: production
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "sleep 3600"]

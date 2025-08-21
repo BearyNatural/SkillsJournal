@@ -1,0 +1,131 @@
+Name:           aws-node
+Selector:       k8s-app=aws-node
+Node-Selector:  <none>
+Labels:         app.kubernetes.io/instance=aws-vpc-cni
+                app.kubernetes.io/managed-by=Helm
+                app.kubernetes.io/name=aws-node
+                app.kubernetes.io/version=v1.19.0
+                helm.sh/chart=aws-vpc-cni-1.19.0
+                k8s-app=aws-node
+Annotations:    deprecated.daemonset.template.generation: 3
+Desired Number of Nodes Scheduled: 1
+Current Number of Nodes Scheduled: 1
+Number of Nodes Scheduled with Up-to-date Pods: 1
+Number of Nodes Scheduled with Available Pods: 1
+Number of Nodes Misscheduled: 0
+Pods Status:  1 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:           app.kubernetes.io/instance=aws-vpc-cni
+                    app.kubernetes.io/name=aws-node
+                    k8s-app=aws-node
+  Service Account:  aws-node
+  Init Containers:
+   aws-vpc-cni-init:
+    Image:      602401143452.dkr.ecr.ap-southeast-2.amazonaws.com/amazon-k8s-cni-init:v1.19.0-eksbuild.1
+    Port:       <none>
+    Host Port:  <none>
+    Requests:
+      cpu:  25m
+    Environment:
+      DISABLE_TCP_EARLY_DEMUX:  false
+      ENABLE_IPv6:              false
+    Mounts:
+      /host/opt/cni/bin from cni-bin-dir (rw)
+  Containers:
+   aws-node:
+    Image:      602401143452.dkr.ecr.ap-southeast-2.amazonaws.com/amazon-k8s-cni:v1.19.0-eksbuild.1
+    Port:       61678/TCP
+    Host Port:  0/TCP
+    Requests:
+      cpu:      25m
+    Liveness:   exec [/app/grpc-health-probe -addr=:50051 -connect-timeout=5s -rpc-timeout=5s] delay=60s timeout=10s period=10s #success=1 #failure=3
+    Readiness:  exec [/app/grpc-health-probe -addr=:50051 -connect-timeout=5s -rpc-timeout=5s] delay=1s timeout=10s period=10s #success=1 #failure=3
+    Environment:
+      ADDITIONAL_ENI_TAGS:                    {}
+      ANNOTATE_POD_IP:                        false
+      AWS_VPC_CNI_NODE_PORT_SUPPORT:          true
+      AWS_VPC_ENI_MTU:                        9001
+      AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG:     false
+      AWS_VPC_K8S_CNI_EXTERNALSNAT:           true
+      AWS_VPC_K8S_CNI_LOGLEVEL:               DEBUG
+      AWS_VPC_K8S_CNI_LOG_FILE:               /host/var/log/aws-routed-eni/ipamd.log
+      AWS_VPC_K8S_CNI_RANDOMIZESNAT:          prng
+      AWS_VPC_K8S_CNI_VETHPREFIX:             eni
+      AWS_VPC_K8S_PLUGIN_LOG_FILE:            /var/log/aws-routed-eni/plugin.log
+      AWS_VPC_K8S_PLUGIN_LOG_LEVEL:           DEBUG
+      CLUSTER_NAME:                           testcluster31
+      DISABLE_INTROSPECTION:                  false
+      DISABLE_METRICS:                        false
+      DISABLE_NETWORK_RESOURCE_PROVISIONING:  false
+      ENABLE_IPv4:                            true
+      ENABLE_IPv6:                            false
+      ENABLE_POD_ENI:                         false
+      ENABLE_PREFIX_DELEGATION:               false
+      ENABLE_SUBNET_DISCOVERY:                true
+      NETWORK_POLICY_ENFORCING_MODE:          standard
+      VPC_CNI_VERSION:                        v1.19.0
+      VPC_ID:                                 vpc-072103bf133499835
+      WARM_ENI_TARGET:                        1
+      WARM_PREFIX_TARGET:                     1
+      MY_NODE_NAME:                            (v1:spec.nodeName)
+      MY_POD_NAME:                             (v1:metadata.name)
+    Mounts:
+      /host/etc/cni/net.d from cni-net-dir (rw)
+      /host/opt/cni/bin from cni-bin-dir (rw)
+      /host/var/log/aws-routed-eni from log-dir (rw)
+      /run/xtables.lock from xtables-lock (rw)
+      /var/run/aws-node from run-dir (rw)
+   aws-eks-nodeagent:
+    Image:      602401143452.dkr.ecr.ap-southeast-2.amazonaws.com/amazon/aws-network-policy-agent:v1.1.5-eksbuild.1
+    Port:       <none>
+    Host Port:  <none>
+    Args:
+      --enable-ipv6=false
+      --enable-network-policy=false
+      --enable-cloudwatch-logs=false
+      --enable-policy-event-logs=false
+      --log-file=/var/log/aws-routed-eni/network-policy-agent.log
+      --metrics-bind-addr=:8162
+      --health-probe-bind-addr=:8163
+      --conntrack-cache-cleanup-period=300
+    Requests:
+      cpu:  25m
+    Environment:
+      MY_NODE_NAME:   (v1:spec.nodeName)
+    Mounts:
+      /host/opt/cni/bin from cni-bin-dir (rw)
+      /sys/fs/bpf from bpf-pin-path (rw)
+      /var/log/aws-routed-eni from log-dir (rw)
+      /var/run/aws-node from run-dir (rw)
+  Volumes:
+   bpf-pin-path:
+    Type:          HostPath (bare host directory volume)
+    Path:          /sys/fs/bpf
+    HostPathType:  
+   cni-bin-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /opt/cni/bin
+    HostPathType:  
+   cni-net-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/cni/net.d
+    HostPathType:  
+   log-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/log/aws-routed-eni
+    HostPathType:  DirectoryOrCreate
+   run-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/run/aws-node
+    HostPathType:  DirectoryOrCreate
+   xtables-lock:
+    Type:               HostPath (bare host directory volume)
+    Path:               /run/xtables.lock
+    HostPathType:       FileOrCreate
+  Priority Class Name:  system-node-critical
+  Node-Selectors:       <none>
+  Tolerations:          op=Exists
+Events:
+  Type    Reason            Age    From                  Message
+  ----    ------            ----   ----                  -------
+  Normal  SuccessfulCreate  2m58s  daemonset-controller  Created pod: aws-node-rjgl8

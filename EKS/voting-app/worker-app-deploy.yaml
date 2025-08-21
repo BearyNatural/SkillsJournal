@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deploy
+  labels:
+    app: demo-voting-app
+    role: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-voting-app
+      role: worker
+  template:
+    metadata:
+      labels:
+        app: demo-voting-app
+        role: worker
+    spec:
+      containers:
+        - name: worker-app
+          image: kodekloud/examplevotingapp_worker:v1
+          env:
+            - name: REDIS_HOST
+              value: "redis"              # check this matches Redis Service name
+            - name: POSTGRES_HOST
+              value: "db"                 # check this matches Postgres Service name
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { cpu: "200m", memory: "256Mi" }

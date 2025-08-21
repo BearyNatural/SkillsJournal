@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-hpa-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-hpa
+  template:
+    metadata:
+      labels:
+        app: test-hpa
+    spec:
+      containers:
+        - name: hpa-test
+          image: python:3.9-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              python3 -m http.server 80 &
+              echo "[INFO] Creating files for load..."
+              for i in $(seq 1 500); do echo "Hello $i" > /tmp/file$i.txt; done
+              echo "[INFO] Sleeping now."
+              sleep 72000
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 400m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

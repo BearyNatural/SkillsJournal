@@ -1,0 +1,5 @@
+FROM public.ecr.aws/aws-observability/aws-otel-collector:v0.41.2
+
+RUN rpm -qa | grep libxml || true
+RUN dnf update libxml2 -y --refresh
+RUN rpm -qa | grep libxml

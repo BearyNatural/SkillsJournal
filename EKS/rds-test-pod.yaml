@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rds-test
+  namespace: default
+spec:
+  serviceAccountName: rds-sa
+  containers:
+  - name: mysql
+    image: mysql:8.0
+    command: ["sleep", "3600"]

@@ -1,0 +1,88 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: simpleitlcx
+  region: us-west-2
+  version: "1.26"
+
+managedNodeGroups:
+  - name: res1a
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 3
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2a"]
+
+  - name: spo1a
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 5
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2a"]
+
+  - name: res2b
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 3
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2b"]
+
+  - name: spo2b
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 5
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2b"]
+
+  - name: res3c
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 3
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2c"]
+
+  - name: spo3c
+    privateNetworking: true
+    desiredCapacity: 1
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 5
+    minSize: 1
+    volumeSize: 20
+    availabilityZones: ["us-west-2c"]
+
+iam:
+  withOIDC: true
+
+iamIdentityMappings:
+  - arn: arn:aws:iam::$ACC:role/Admin
+    groups:
+      - system:masters
+    username: kayhowe-Isengard
+    noDuplicateARNs: true
+
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+      - "*"

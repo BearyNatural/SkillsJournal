@@ -1,0 +1,15 @@
+{
+    "family": "my-ec2-task",
+    "containerDefinitions": [
+        {
+            "name": "my-ec2-container",
+            "image": "amazonlinux",
+            "memory": 512,
+            "cpu": 256,
+            "essential": true,
+            "command": ["sh", "-c", "while true; do echo hello world; sleep 1; done"]
+        }
+    ],
+    "requiresCompatibilities": ["EC2"],
+    "networkMode": "bridge"
+}

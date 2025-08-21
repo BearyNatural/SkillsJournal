@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: echo-server2
+  labels:
+    env: training
+    type: single_pod
+spec:
+  containers:
+  - name: echo
+    image: k8s.gcr.io/echoserver:1.4
+    ports:
+    - containerPort: 8080
+      protocol: TCP

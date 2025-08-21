@@ -2,7 +2,7 @@
     # chmod +x deploy-ecs-ec2-tasks.sh
     # ./deploy-ecs-ec2-tasks.sh
 
-# A simple hello-world app with a sleep of 2 mins
+# A hello-world app with a sleep of 2 mins
 
 #!/bin/bash
 set -e

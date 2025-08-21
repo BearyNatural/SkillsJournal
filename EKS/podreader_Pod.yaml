@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podreader
+  labels:
+    app: podreader
+spec:
+  serviceAccountName: podreader
+  containers:
+  - name: podreader
+    image: public.ecr.aws/aws-cli/aws-cli
+    command: ["/bin/sh", "-x", "-c" ,"sleep 3600"]

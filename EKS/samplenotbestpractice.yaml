@@ -1,0 +1,20 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: sampleitl
+  region: ap-southeast-2
+  version: "1.28"
+managedNodeGroups:
+  - name: mng
+    privateNetworking: true
+    desiredCapacity: 2
+    instanceType: t3.medium
+    labels:
+      worker: linux
+    maxSize: 3
+    minSize: 0
+    volumeSize: 20
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+      - "*"

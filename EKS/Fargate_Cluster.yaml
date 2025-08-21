@@ -1,0 +1,19 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: awslbcfg
+  region: ap-southeast-2
+  version: "1.29"
+fargateProfiles:
+  - name: fp
+    selectors:
+      - namespace: kube-system   
+  - name: fpd
+    selectors:
+      - namespace: default  
+iam:
+  withOIDC: true
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+      - "*"

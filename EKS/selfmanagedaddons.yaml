@@ -1,0 +1,28 @@
+# eksctl create cluster -f selfmanagedaddons.yaml \ eksctl delete cluster --region=us-east-1 --name=test-cluster-124
+apiVersion: eksctl.io/v1alpha5 
+kind: ClusterConfig
+
+metadata:
+  name: test-cluster-124
+  region: us-east-1
+  version: "1.24"
+
+managedNodeGroups:
+  - name: ng-standard
+    instanceType: t3.medium
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 3
+    volumeSize: 20
+
+# Do not enable managed EKS add-ons by specifying the below
+addonsConfig:
+  disableDefaultAddons: false # tried both true and false neither made a difference, eks managed addons are still installed
+addons:
+  - name: vpc-cni
+    version: 1.12.2-eksbuild.1
+    resolveConflicts: overwrite
+  - name: kube-proxy
+    version: "" # leaving this blank for eksctl to find the default version
+  - name: coredns
+    version: 1.9.3-eksbuild.6
