@@ -17,6 +17,7 @@ on:
         options:
           - Bens2ndServer
           - kaysminecraftserver
+          - benmc5
 
 permissions:
   id-token: write
