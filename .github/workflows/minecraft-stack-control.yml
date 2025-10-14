@@ -15,10 +15,8 @@ on:
         required: true
         type: choice
         options:
-          - Bens2ndServer
           - kaysminecraftserver
           - benmc5
-          - cluster6
 
 permissions:
   id-token: write
