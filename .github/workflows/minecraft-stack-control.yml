@@ -17,6 +17,7 @@ on:
         options:
           - kaysminecraftserver
           - benmc5
+          - bencursed
 
 permissions:
   id-token: write
@@ -155,7 +156,7 @@ jobs:
           #   --output text)
 
           # if [ "$EXIT_CODE" != "0" ]; then
-          #   echo "❌ Backup task failed with exit code $EXIT_CODE"
+          #   echo "Backup task failed with exit code $EXIT_CODE"
           #   exit 1
           # fi
 
