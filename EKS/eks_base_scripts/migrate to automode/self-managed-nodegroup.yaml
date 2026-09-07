@@ -65,7 +65,7 @@ Resources:
             Tags:
               - Key: Name
                 Value: !Sub ${ClusterName}-node
-              - Key: kubernetes.io/cluster/${ClusterName}
+              - Key: !Sub kubernetes.io/cluster/${ClusterName}
                 Value: owned
 
   NodeGroupASG:
@@ -82,7 +82,7 @@ Resources:
         - Key: Name
           Value: !Sub ${ClusterName}-asg
           PropagateAtLaunch: true
-        - Key: kubernetes.io/cluster/${ClusterName}
+        - Key: !Sub kubernetes.io/cluster/${ClusterName}
           Value: owned
           PropagateAtLaunch: true
     UpdatePolicy:

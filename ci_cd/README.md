@@ -1,5 +1,30 @@
 <!-- Working as a team in repositories and code buckets -->
 
+# Monthly validation
+
+This repository has a GitHub Actions workflow at `.github/workflows/monthly-project-validation.yml`.
+
+It runs on the first day of each month and can also be started manually from the GitHub Actions tab. The workflow checks:
+
+- YAML syntax across repository `.yaml` and `.yml` files.
+- CloudFormation template validity with `cfn-lint`.
+- Public access to the published S3 CloudFormation template URL.
+- Shell script syntax with `bash -n`.
+
+The scan intentionally skips files that are stored with a YAML extension but are not real YAML manifests, and the incomplete nested-stack parent at `ECS/Websocket Fargate eCS/parent.yml` because it references a `vpc.yml` file that is not present in the repository.
+
+Run the same checks locally:
+
+```bash
+./ci_cd/validate-projects.sh
+```
+
+If you only want the offline checks, skip the public S3 template download:
+
+```bash
+SKIP_PUBLIC_TEMPLATE_CHECK=1 ./ci_cd/validate-projects.sh
+```
+
 # Step 1. Ensure the local repository is up-to-date
 git pull origin main
 

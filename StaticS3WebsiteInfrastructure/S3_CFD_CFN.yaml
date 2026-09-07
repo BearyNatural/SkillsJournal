@@ -25,8 +25,15 @@ Resources:
   privateS3bucket: #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: Private
       BucketName: !Ref S3BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
       VersioningConfiguration:
         Status: Enabled
       Tags:
