@@ -4,7 +4,7 @@ data "aws_caller_identity" "current" {}
 
 # Create my private repo
 resource "aws_ecr_repository" "lab_repo" {
-  name = "lab_repo"
+  name         = "lab_repo"
   force_delete = true # this will destroy all images contained within upon terraform destroy
 }
 
@@ -16,10 +16,10 @@ resource "aws_ecr_repository_policy" "lab_ecr_policy" {
     Version = "2008-10-17",
     Statement = [
       {
-      Sid       = "AllowECSFargatePull",
-      Effect    = "Allow",
-      Principal = "*",
-      Action    = ["*"]
+        Sid       = "AllowECSFargatePull",
+        Effect    = "Allow",
+        Principal = "*",
+        Action    = ["*"]
       }
     ]
   })

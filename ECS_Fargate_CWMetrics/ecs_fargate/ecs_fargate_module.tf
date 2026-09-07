@@ -1,8 +1,8 @@
 # Create an ECS Fargate cluster
-resource "aws_ecs_cluster" "lab_ecs_cluster"  {
-  name = "lab_ecs_cluster"  
+resource "aws_ecs_cluster" "lab_ecs_cluster" {
+  name = "lab_ecs_cluster"
   setting {
-    name = "containerInsights"
+    name  = "containerInsights"
     value = "enabled"
   }
 }
@@ -15,7 +15,7 @@ resource "aws_iam_role" "lab_ecs_execution_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "",
+        Sid    = "",
         Effect = "Allow",
         Principal = {
           Service = "ecs-tasks.amazonaws.com"
@@ -28,7 +28,7 @@ resource "aws_iam_role" "lab_ecs_execution_role" {
 
 # Attach an IAM role for the Tasks
 resource "aws_iam_role_policy_attachment" "lab_ecs_attach" {
-  role = aws_iam_role.lab_ecs_execution_role.name
+  role       = aws_iam_role.lab_ecs_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -60,11 +60,11 @@ resource "aws_iam_role_policy_attachment" "ecs_logging_attachment" {
 
 # Create a task definition
 resource "aws_ecs_task_definition" "lab_ecs_taskdefinition" {
-  family = "lab_task_family"
-  network_mode = "awsvpc"
+  family                   = "lab_task_family"
+  network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu = "256"
-  memory = "512"
+  cpu                      = "256"
+  memory                   = "512"
 
   execution_role_arn = aws_iam_role.lab_ecs_execution_role.arn
 
@@ -92,37 +92,37 @@ resource "aws_ecs_task_definition" "lab_ecs_taskdefinition" {
   # DEFINITION
 
   container_definitions = jsonencode([
-  {
-    name  = "my-container"
-    image = "${var.repourl}:latest"
-    portMappings = [
-      {
-        containerPort = 8080
-      }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
-        "awslogs-region"        = var.region
-        "awslogs-stream-prefix" = "ecs"
+    {
+      name  = "my-container"
+      image = "${var.repourl}:latest"
+      portMappings = [
+        {
+          containerPort = 8080
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-region"        = var.region
+          "awslogs-stream-prefix" = "ecs"
+        }
       }
     }
-  }
-])
+  ])
 }
 
 # Create a Fargate service
 resource "aws_ecs_service" "lab_fargate_service" {
-  name = "lab_fargate_service"
-  cluster = aws_ecs_cluster.lab_ecs_cluster.id
+  name            = "lab_fargate_service"
+  cluster         = aws_ecs_cluster.lab_ecs_cluster.id
   task_definition = aws_ecs_task_definition.lab_ecs_taskdefinition.arn
-  launch_type = "FARGATE"
-  depends_on = [ aws_security_group.lab_ecs_sg ]
+  launch_type     = "FARGATE"
+  depends_on      = [aws_security_group.lab_ecs_sg]
 
   network_configuration {
-    subnets = [ var.subnet1, var.subnet2 ]
-    security_groups = [ aws_security_group.lab_ecs_sg.id ]
+    subnets          = [var.subnet1, var.subnet2]
+    security_groups  = [aws_security_group.lab_ecs_sg.id]
     assign_public_ip = true
   }
 
@@ -133,45 +133,45 @@ resource "aws_ecs_service" "lab_fargate_service" {
   }
 
   deployment_minimum_healthy_percent = 100
-  deployment_maximum_percent = 200
+  deployment_maximum_percent         = 200
 }
 
 # Create a security group for the ECS tasks
 resource "aws_security_group" "lab_ecs_sg" {
   name_prefix = "lab_ecs_sg-"
   description = "Allow webaccess inbound traffic"
-  vpc_id = var.vpc
+  vpc_id      = var.vpc
 
   //Allow incoming traffic to the Fargate contianers
   ingress = [
     {
-    from_port = 8080
-    to_port = 8080
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] 
-    ipv6_cidr_blocks = null
-    prefix_list_ids = null
-    security_groups = null
-    self = null
-    description = null
+      from_port        = 8080
+      to_port          = 8080
+      protocol         = "tcp"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = null
+      prefix_list_ids  = null
+      security_groups  = null
+      self             = null
+      description      = null
   }]
-    egress = [
+  egress = [
     {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"] 
-    ipv6_cidr_blocks = null
-    prefix_list_ids = null
-    security_groups = null
-    self = null
-    description = null
+      from_port        = 0
+      to_port          = 0
+      protocol         = "-1"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = null
+      prefix_list_ids  = null
+      security_groups  = null
+      self             = null
+      description      = null
   }]
 }
 
 # Create the CloudWatch log group
 resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name = "/ecs/lab_fargate_service"
+  name              = "/ecs/lab_fargate_service"
   retention_in_days = 14
 }
 

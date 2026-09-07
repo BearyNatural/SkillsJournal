@@ -8,10 +8,14 @@ It runs on the first day of each month and can also be started manually from the
 
 - YAML syntax across repository `.yaml` and `.yml` files.
 - CloudFormation template validity with `cfn-lint`.
+- Terraform formatting and validation for `ECS_Fargate_CWMetrics`.
+- Terraform CLI freshness against HashiCorp's latest stable release index.
 - Public access to the published S3 CloudFormation template URL.
 - Shell script syntax with `bash -n`.
 
 The scan intentionally skips files that are stored with a YAML extension but are not real YAML manifests, and the incomplete nested-stack parent at `ECS/Websocket Fargate eCS/parent.yml` because it references a `vpc.yml` file that is not present in the repository.
+
+The validator continues running after a check fails so the workflow logs show all issues found in the same scan. At the end, any recorded error makes the GitHub Actions run fail and triggers failure notifications.
 
 Run the same checks locally:
 
@@ -24,6 +28,8 @@ If you only want the offline checks, skip the public S3 template download:
 ```bash
 SKIP_PUBLIC_TEMPLATE_CHECK=1 ./ci_cd/validate-projects.sh
 ```
+
+The workflow installs the latest stable Terraform release and confirms the installed version matches HashiCorp's Terraform release index before validating the Terraform project. If a runner is not using the latest stable version, the workflow records `Terraform is out of date`, continues scanning, and fails at the end so GitHub can notify you.
 
 # Step 1. Ensure the local repository is up-to-date
 git pull origin main

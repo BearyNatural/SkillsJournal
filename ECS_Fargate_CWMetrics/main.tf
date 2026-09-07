@@ -10,8 +10,8 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "ap-southeast-2"  # ap-southeast-2 
-  alias  = "SYD" #SYD
+  region = "ap-southeast-2" # ap-southeast-2
+  alias  = "SYD"            #SYD
   default_tags {
     tags = {
       # deployed_by = "BearyNatural"
@@ -32,18 +32,18 @@ module "vpc" {
 
 # 2. Import ECR module
 module "ecr" {
-  depends_on = [ module.vpc ]
-  source = "./ecr/"
+  depends_on = [module.vpc]
+  source     = "./ecr/"
 }
 
 # 3. Import EC2 module
 module "ec2" {
-  depends_on = [ module.ecr, module.vpc ]
-  source = "./ec2/"
-  repourl = module.ecr.repo_url
-  repoarn = module.ecr.repo_arn
-  reponame = module.ecr.repo_name
-  region = data.aws_region.current.name
+  depends_on = [module.ecr, module.vpc]
+  source     = "./ec2/"
+  repourl    = module.ecr.repo_url
+  repoarn    = module.ecr.repo_arn
+  reponame   = module.ecr.repo_name
+  region     = data.aws_region.current.name
   vpc        = module.vpc.vpc
   subnetid   = module.vpc.public_subnet_1_id
   accountid  = data.aws_caller_identity.current.account_id
@@ -59,4 +59,3 @@ module "ecs_fargate" {
   vpc        = module.vpc.vpc
   region     = data.aws_region.current.name
 }
-
