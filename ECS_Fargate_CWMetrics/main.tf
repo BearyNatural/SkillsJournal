@@ -1,5 +1,7 @@
 # Base & Start
 terraform {
+  required_version = ">= 1.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -11,7 +13,6 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   region = "ap-southeast-2" # ap-southeast-2
-  alias  = "SYD"            #SYD
   default_tags {
     tags = {
       # deployed_by = "BearyNatural"
@@ -22,7 +23,6 @@ provider "aws" {
 
 # Configured within the provider
 data "aws_region" "current" {}
-data "aws_availability_zones" "available" {}
 data "aws_caller_identity" "current" {}
 
 # 1. Import VPC module

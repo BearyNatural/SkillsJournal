@@ -6,22 +6,29 @@ on:
     - cron: "17 3 1 * *"
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
   validate-projects:
     name: Validate projects
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: "3.12"
+          check-latest: true
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4
@@ -29,10 +36,61 @@ jobs:
           terraform_version: latest
           terraform_wrapper: false
 
+      - name: Set up TFLint
+        continue-on-error: true
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: latest
+          cache: true
+
+      - name: Set up Trivy
+        continue-on-error: true
+        uses: aquasecurity/setup-trivy@v0.2.6
+        with:
+          version: latest
+
       - name: Install validation tools
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install cfn-lint PyYAML
+          install_failed=0
+          python -m pip install --upgrade pip || install_failed=1
+          python -m pip install --upgrade cfn-lint PyYAML || install_failed=1
+          python -m pip install --upgrade checkov || install_failed=1
+          gem install cfn-nag --no-document || install_failed=1
+          if ((install_failed)); then
+            echo "::warning title=Validation tool install warning::One or more validation tools failed to install. The validation step will report missing tools and keep scanning what it can."
+          fi
+
+      - name: Run safe auto-fixes
+        env:
+          AUTOFIX_SUMMARY: ${{ runner.temp }}/monthly-autofix-summary.md
+        run: ./ci_cd/autofix-projects.sh
 
       - name: Run monthly project validation
+        id: validation
+        continue-on-error: true
         run: ./ci_cd/validate-projects.sh
+
+      - name: Create pull request for auto-fixes
+        id: cpr
+        if: always()
+        uses: peter-evans/create-pull-request@v8.1.1
+        with:
+          commit-message: Apply monthly validation auto-fixes
+          title: Apply monthly validation auto-fixes
+          body-path: ${{ runner.temp }}/monthly-autofix-summary.md
+          branch: automated/monthly-project-autofixes
+          delete-branch: true
+          add-paths: |
+            ECS_Fargate_CWMetrics/**/*.tf
+            ECS_Fargate_CWMetrics/.terraform.lock.hcl
+
+      - name: Log auto-fix pull request
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: |
+          echo "Auto-fix PR #${{ steps.cpr.outputs.pull-request-number }}: ${{ steps.cpr.outputs.pull-request-url }}"
+
+      - name: Fail if unresolved issues remain
+        if: steps.validation.outcome == 'failure'
+        run: |
+          echo "Monthly validation found issue(s) that could not be fixed automatically. See the validation logs above."
+          exit 1

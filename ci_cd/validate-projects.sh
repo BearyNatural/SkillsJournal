@@ -7,6 +7,18 @@ PUBLIC_TEMPLATE_COPY="/tmp/S3_CFD_CFN.yaml"
 CFN_TEMPLATE_LIST="$(mktemp)"
 TERRAFORM_RELEASE_JSON="$(mktemp)"
 TERRAFORM_RELEASE_INDEX_URL="https://releases.hashicorp.com/terraform/index.json"
+CHECKOV_SKIP_PATH_ARGS=(
+  --skip-path "EKS/aws-node_config.yaml"
+  --skip-path "EKS/bootscript.yml"
+  --skip-path "ECS/Websocket Fargate eCS/parent.yml"
+)
+TRIVY_SKIP_ARGS=(
+  --skip-dirs ".git"
+  --skip-dirs "**/.terraform"
+  --skip-files "EKS/aws-node_config.yaml"
+  --skip-files "EKS/bootscript.yml"
+  --skip-files "ECS/Websocket Fargate eCS/parent.yml"
+)
 
 failures=()
 
@@ -40,21 +52,49 @@ trap 'rm -f "$CFN_TEMPLATE_LIST" "$TERRAFORM_RELEASE_JSON"' EXIT
 
 echo "== Tool versions =="
 if ! command -v python3 >/dev/null 2>&1; then
-  record_failure "Missing tool" "python3 is not installed or not on PATH."
+  echo "python3: not installed"
 else
   python3 --version
 fi
 
 if ! command -v cfn-lint >/dev/null 2>&1; then
-  record_failure "Missing tool" "cfn-lint is not installed or not on PATH."
+  echo "cfn-lint: not installed"
 else
   cfn-lint --version
 fi
 
 if ! command -v terraform >/dev/null 2>&1; then
-  record_failure "Missing tool" "terraform is not installed or not on PATH."
+  echo "terraform: not installed"
 else
   terraform version
+fi
+
+if ! command -v tflint >/dev/null 2>&1; then
+  echo "tflint: not installed"
+else
+  tflint --version
+fi
+
+if [[ "${SKIP_SECURITY_SCAN:-}" == "1" ]]; then
+  echo "Advanced security/compliance scanner version checks skipped because SKIP_SECURITY_SCAN=1."
+else
+  if ! command -v checkov >/dev/null 2>&1; then
+    echo "checkov: not installed"
+  else
+    checkov --version
+  fi
+
+  if ! command -v trivy >/dev/null 2>&1; then
+    echo "trivy: not installed"
+  else
+    trivy --version
+  fi
+
+  if ! command -v cfn_nag_scan >/dev/null 2>&1; then
+    echo "cfn_nag_scan: not installed"
+  else
+    echo "cfn_nag_scan: $(command -v cfn_nag_scan)"
+  fi
 fi
 
 echo "== Terraform version policy =="
@@ -146,6 +186,26 @@ if command -v terraform >/dev/null 2>&1; then
   done
 else
   record_failure "Terraform validation skipped" "Could not run Terraform validation because terraform is unavailable."
+fi
+
+echo "== Terraform lint: TFLint =="
+if command -v tflint >/dev/null 2>&1; then
+  for project in "${terraform_projects[@]}"; do
+    echo "Checking TFLint project: $project"
+
+    if [[ -f "$project/.tflint.hcl" || -f "$project/.tflint.json" ]]; then
+      if ! (cd "$project" && tflint --init); then
+        record_failure "TFLint init failed" "${project} could not initialize TFLint plugins."
+        continue
+      fi
+    fi
+
+    if ! (cd "$project" && tflint --format compact); then
+      record_failure "TFLint failed" "${project} has Terraform lint findings or TFLint could not complete."
+    fi
+  done
+else
+  record_failure "TFLint skipped" "Could not run TFLint because it is unavailable."
 fi
 
 echo "== YAML syntax =="
@@ -258,15 +318,95 @@ else
   fi
 fi
 
+if [[ "${SKIP_SECURITY_SCAN:-}" == "1" ]]; then
+  echo "Skipping IaC security/compliance scans because SKIP_SECURITY_SCAN=1."
+else
+  echo "== CloudFormation security: cfn_nag =="
+  if ! command -v cfn_nag_scan >/dev/null 2>&1; then
+    record_failure "cfn_nag skipped" "Could not run cfn_nag because cfn_nag_scan is unavailable."
+  elif ((${#CFN_TEMPLATES[@]} == 0)); then
+    echo "No CloudFormation templates found for cfn_nag."
+  else
+    for template in "${CFN_TEMPLATES[@]}"; do
+      echo "Checking cfn_nag template: $template"
+      if ! cfn_nag_scan --input-path "$template"; then
+        record_failure "cfn_nag failed" "${template} has CloudFormation security findings or cfn_nag could not complete."
+      fi
+    done
+  fi
+
+  echo "== IaC security/compliance: Checkov =="
+  if ! command -v checkov >/dev/null 2>&1; then
+    record_failure "Checkov skipped" "Could not run Checkov because it is unavailable."
+  else
+    for project in "${terraform_projects[@]}"; do
+      echo "Checking Checkov Terraform project: $project"
+      if ! checkov --directory "$project" --framework terraform --quiet --compact; then
+        record_failure "Checkov Terraform failed" "${project} has Terraform security/compliance findings or Checkov could not complete."
+      fi
+    done
+
+    if ((${#CFN_TEMPLATES[@]} == 0)); then
+      echo "No CloudFormation templates found for Checkov."
+    else
+      for template in "${CFN_TEMPLATES[@]}"; do
+        echo "Checking Checkov CloudFormation template: $template"
+        if ! checkov --file "$template" --framework cloudformation --quiet --compact; then
+          record_failure "Checkov CloudFormation failed" "${template} has CloudFormation security/compliance findings or Checkov could not complete."
+        fi
+      done
+    fi
+
+    if [[ -d "EKS" ]]; then
+      echo "Checking Checkov Kubernetes manifests: EKS"
+      if ! checkov --directory "EKS" --framework kubernetes --quiet --compact "${CHECKOV_SKIP_PATH_ARGS[@]}"; then
+        record_failure "Checkov Kubernetes failed" "EKS has Kubernetes security/compliance findings or Checkov could not complete."
+      fi
+    else
+      echo "No EKS directory found for Checkov Kubernetes scanning."
+    fi
+  fi
+
+  echo "== IaC security/compliance: Trivy =="
+  if ! command -v trivy >/dev/null 2>&1; then
+    record_failure "Trivy skipped" "Could not run Trivy because it is unavailable."
+  elif ! trivy fs \
+    --scanners misconfig,secret \
+    --misconfig-scanners terraform,cloudformation,kubernetes \
+    --severity HIGH,CRITICAL \
+    --exit-code 1 \
+    --no-progress \
+    "${TRIVY_SKIP_ARGS[@]}" \
+    .; then
+    record_failure "Trivy failed" "Trivy found high/critical IaC misconfigurations, secrets, or could not complete."
+  fi
+fi
+
 echo "== Published S3 template check =="
 if [[ "${SKIP_PUBLIC_TEMPLATE_CHECK:-}" == "1" ]]; then
   echo "Skipping public S3 template check because SKIP_PUBLIC_TEMPLATE_CHECK=1."
-elif ! command -v cfn-lint >/dev/null 2>&1; then
-  record_failure "Published S3 template check skipped" "Could not lint the published template because cfn-lint is unavailable."
 elif ! curl --retry 3 --retry-delay 5 -fsSL "$PUBLIC_TEMPLATE_URL" -o "$PUBLIC_TEMPLATE_COPY"; then
   record_failure "Published S3 template download failed" "Could not download ${PUBLIC_TEMPLATE_URL}."
-elif ! cfn-lint --non-zero-exit-code error --regions us-east-1 -t "$PUBLIC_TEMPLATE_COPY"; then
-  record_failure "Published S3 template lint failed" "The published S3 CloudFormation template contains errors."
+else
+  if ! command -v cfn-lint >/dev/null 2>&1; then
+    record_failure "Published S3 template lint skipped" "Could not lint the published template because cfn-lint is unavailable."
+  elif ! cfn-lint --non-zero-exit-code error --regions us-east-1 -t "$PUBLIC_TEMPLATE_COPY"; then
+    record_failure "Published S3 template lint failed" "The published S3 CloudFormation template contains errors."
+  fi
+
+  if [[ "${SKIP_SECURITY_SCAN:-}" != "1" ]]; then
+    if ! command -v cfn_nag_scan >/dev/null 2>&1; then
+      record_failure "Published S3 cfn_nag skipped" "Could not run cfn_nag on the published template because cfn_nag_scan is unavailable."
+    elif ! cfn_nag_scan --input-path "$PUBLIC_TEMPLATE_COPY"; then
+      record_failure "Published S3 cfn_nag failed" "The published S3 CloudFormation template has cfn_nag security findings."
+    fi
+
+    if ! command -v checkov >/dev/null 2>&1; then
+      record_failure "Published S3 Checkov skipped" "Could not run Checkov on the published template because Checkov is unavailable."
+    elif ! checkov --file "$PUBLIC_TEMPLATE_COPY" --framework cloudformation --quiet --compact; then
+      record_failure "Published S3 Checkov failed" "The published S3 CloudFormation template has Checkov security/compliance findings."
+    fi
+  fi
 fi
 
 echo "== Shell syntax =="
