@@ -4,26 +4,18 @@ data "aws_caller_identity" "current" {}
 
 # Create my private repo
 resource "aws_ecr_repository" "lab_repo" {
-  name         = "lab_repo"
-  force_delete = true # this will destroy all images contained within upon terraform destroy
+  name                 = "lab_repo"
+  force_delete         = true # this will destroy all images contained within upon terraform destroy
+  image_tag_mutability = "IMMUTABLE"
+
+  encryption_configuration {
+    encryption_type = "KMS"
+  }
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
-
-# Create IAM policy to allow ECS Fargate to pull image from my account only
-resource "aws_ecr_repository_policy" "lab_ecr_policy" {
-  repository = aws_ecr_repository.lab_repo.name
-
-  policy = jsonencode({
-    Version = "2008-10-17",
-    Statement = [
-      {
-        Sid       = "AllowECSFargatePull",
-        Effect    = "Allow",
-        Principal = "*",
-        Action    = ["*"]
-      }
-    ]
-  })
-} # Removed due to issues with the code :'()
 
 # Outputs
 output "repo_url" {

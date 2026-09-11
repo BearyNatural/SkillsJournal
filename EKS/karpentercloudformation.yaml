@@ -205,6 +205,12 @@ Resources:
               ]
             },
             {
+              "Sid": "AllowInterruptionQueueDecrypt",
+              "Effect": "Allow",
+              "Resource": "${KarpenterInterruptionQueueKmsKey.Arn}",
+              "Action": "kms:Decrypt"
+            },
+            {
               "Sid": "AllowPassingInstanceRole",
               "Effect": "Allow",
               "Resource": "${KarpenterNodeRole.Arn}",
@@ -295,7 +301,32 @@ Resources:
     Properties:
       QueueName: !Sub "${ClusterName}"
       MessageRetentionPeriod: 300
-      SqsManagedSseEnabled: true
+      KmsMasterKeyId: !Ref KarpenterInterruptionQueueKmsKey
+  KarpenterInterruptionQueueKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub "KMS key for ${ClusterName} Karpenter interruption queue"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAccountAdministration
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: "*"
+          - Sid: AllowEventBridgeToUseKey
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
   KarpenterInterruptionQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:

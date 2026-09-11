@@ -4,7 +4,9 @@
 
 This repository has a GitHub Actions workflow at `.github/workflows/monthly-project-validation.yml`.
 
-It runs on the first day of each month and can also be started manually from the GitHub Actions tab. The workflow checks:
+It runs on every push to a repository branch, on the first day of each month, and can also be started manually from the GitHub Actions tab. Auto-fix branches under `automated/monthly-project-autofixes/**` are ignored so the workflow does not trigger itself in a loop.
+
+The workflow checks:
 
 - YAML syntax across repository `.yaml` and `.yml` files.
 - CloudFormation template validity with `cfn-lint`.
@@ -17,9 +19,11 @@ It runs on the first day of each month and can also be started manually from the
 - Public access to the published S3 CloudFormation template URL.
 - Shell script syntax with `bash -n`.
 
-The scan intentionally skips files that are stored with a YAML extension but are not real YAML manifests, and the incomplete nested-stack parent at `ECS/Websocket Fargate eCS/parent.yml` because it references a `vpc.yml` file that is not present in the repository.
+The scan intentionally skips files that are stored with a YAML extension but are not real YAML manifests, the AWS VPC CNI vendor manifest at `EKS/aws-k8s-cni.yaml`, and the incomplete nested-stack parent at `ECS/Websocket Fargate eCS/parent.yml` because it references a `vpc.yml` file that is not present in the repository.
 
 Before validation, the workflow applies safe automated fixes. Currently this means `terraform fmt -recursive` and Terraform provider lock-file refreshes for `ECS_Fargate_CWMetrics`. If those fixes change files, GitHub Actions opens or updates a pull request named `Apply monthly validation auto-fixes` and notes the changed files in the workflow logs and PR body.
+
+Auto-fix pull request branches include the source branch name, for example `automated/monthly-project-autofixes/feature/my-change`, so scans from different branches do not reuse the same auto-fix branch.
 
 The validator continues running after a check fails so the workflow logs show all issues found in the same scan. At the end, any recorded error makes the GitHub Actions run fail and triggers failure notifications. If auto-fixes resolve every issue, the run succeeds and the auto-fix pull request can be reviewed and merged.
 
@@ -32,6 +36,7 @@ The workflow installs the current scanner versions each run:
 - `cfn-nag` is installed from the latest Ruby gem.
 
 Python is set to the latest available `3.12` patch because Checkov currently supports Python 3.9 through 3.12.
+Ruby is set to `3.3` for `cfn-nag` compatibility while still installing the latest `cfn-nag` gem each run.
 
 Pull request creation uses the workflow's `GITHUB_TOKEN`. In GitHub repository settings, Actions must have read/write workflow permissions and permission to create pull requests.
 

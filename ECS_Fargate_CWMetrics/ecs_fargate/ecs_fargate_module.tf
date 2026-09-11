@@ -1,4 +1,10 @@
 # Create an ECS Fargate cluster
+data "aws_caller_identity" "current" {}
+
+locals {
+  ecs_log_group_name = "/ecs/lab_fargate_service"
+}
+
 resource "aws_ecs_cluster" "lab_ecs_cluster" {
   name = "lab_ecs_cluster"
   setting {
@@ -93,8 +99,9 @@ resource "aws_ecs_task_definition" "lab_ecs_taskdefinition" {
 
   container_definitions = jsonencode([
     {
-      name  = "my-container"
-      image = "${var.repourl}:latest"
+      name                   = "my-container"
+      image                  = "${var.repourl}:latest"
+      readonlyRootFilesystem = true
       portMappings = [
         {
           containerPort = 8080
@@ -103,7 +110,7 @@ resource "aws_ecs_task_definition" "lab_ecs_taskdefinition" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-group"         = local.ecs_log_group_name
           "awslogs-region"        = var.region
           "awslogs-stream-prefix" = "ecs"
         }
@@ -170,8 +177,54 @@ resource "aws_security_group" "lab_ecs_sg" {
 }
 
 # Create the CloudWatch log group
-resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/lab_fargate_service"
-  retention_in_days = 14
+resource "aws_kms_key" "ecs_logs" {
+  description             = "KMS key for ECS CloudWatch logs"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowAccountAdministration"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsUse"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${var.region}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnEquals = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:${local.ecs_log_group_name}"
+          }
+        }
+      }
+    ]
+  })
 }
 
+resource "aws_kms_alias" "ecs_logs" {
+  name          = "alias/lab-ecs-logs"
+  target_key_id = aws_kms_key.ecs_logs.key_id
+}
+
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = local.ecs_log_group_name
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.ecs_logs.arn
+}

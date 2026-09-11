@@ -12,3 +12,6 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Local Kubernetes secrets
+EKS/voting-app/postgres-secret.yaml

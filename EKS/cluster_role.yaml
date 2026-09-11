@@ -4,7 +4,17 @@ metadata:
   name: readonly-access
 rules:
 - apiGroups: [""]
-  resources: ["*"]
+  resources:
+  - configmaps
+  - endpoints
+  - events
+  - namespaces
+  - nodes
+  - persistentvolumeclaims
+  - persistentvolumes
+  - pods
+  - pods/log
+  - services
   verbs: ["get", "list", "watch"]
 - apiGroups: ["metrics.k8s.io"]
   resources: ["nodes"]
