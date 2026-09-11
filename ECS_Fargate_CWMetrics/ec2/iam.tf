@@ -29,19 +29,27 @@ resource "aws_iam_role_policy" "ec2_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Action = [
-        "ecr:GetAuthorizationToken",
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:PutImage",
-        "ecr:InitiateLayerUpload",
-        "ecr:UploadLayerPart",
-        "ecr:CompleteLayerUpload"
-      ],
-      Resource = "*", # cut this to least priv also
-      Effect   = "Allow",
-    }]
+    Statement = [
+      {
+        Sid      = "AllowEcrAuthToken"
+        Effect   = "Allow"
+        Action   = "ecr:GetAuthorizationToken"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowPushToLabRepository"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
+        Resource = var.repoarn
+      }
+    ]
   })
 }
 

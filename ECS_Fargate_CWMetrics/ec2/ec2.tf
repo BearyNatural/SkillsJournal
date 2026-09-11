@@ -1,19 +1,13 @@
-# Create the security group for the instance that creates the image
-resource "aws_security_group" "allow_all" {
-  name        = "allow_all_ec2"
-  description = "Allow all inbound traffic" # cut this later to least priv
+# Create the security group for the instance that creates the image.
+resource "aws_security_group" "docker_builder" {
+  name        = "docker_builder_ec2"
+  description = "EC2 image builder with no inbound network access"
   vpc_id      = var.vpc
 
-  ingress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
-    from_port   = 0
-    to_port     = 65535
+    description = "Allow HTTPS egress for package installs, ECR auth, and image push"
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -41,12 +35,13 @@ locals {
 
 # Create the Spot instance for Docker image creation
 resource "aws_spot_instance_request" "docker_image_builder" {
-  ami                  = data.aws_ssm_parameter.ami.value
-  instance_type        = var.instancetype
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
-  security_groups      = [aws_security_group.allow_all.id]
-  subnet_id            = var.subnetid
-  spot_type            = "one-time"
+  ami                         = data.aws_ssm_parameter.ami.value
+  instance_type               = var.instancetype
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  vpc_security_group_ids      = [aws_security_group.docker_builder.id]
+  subnet_id                   = var.subnetid
+  associate_public_ip_address = true
+  spot_type                   = "one-time"
 
   spot_price           = local.bid_price
   wait_for_fulfillment = true

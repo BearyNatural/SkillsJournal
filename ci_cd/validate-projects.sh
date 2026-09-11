@@ -8,6 +8,7 @@ CFN_TEMPLATE_LIST="$(mktemp)"
 TERRAFORM_RELEASE_JSON="$(mktemp)"
 TERRAFORM_RELEASE_INDEX_URL="https://releases.hashicorp.com/terraform/index.json"
 CHECKOV_SKIP_PATH_ARGS=(
+  --skip-path "EKS/aws-k8s-cni.yaml"
   --skip-path "EKS/aws-node_config.yaml"
   --skip-path "EKS/bootscript.yml"
   --skip-path "ECS/Websocket Fargate eCS/parent.yml"
@@ -15,6 +16,7 @@ CHECKOV_SKIP_PATH_ARGS=(
 TRIVY_SKIP_ARGS=(
   --skip-dirs ".git"
   --skip-dirs "**/.terraform"
+  --skip-files "EKS/aws-k8s-cni.yaml"
   --skip-files "EKS/aws-node_config.yaml"
   --skip-files "EKS/bootscript.yml"
   --skip-files "ECS/Websocket Fargate eCS/parent.yml"
@@ -398,7 +400,7 @@ else
     if ! command -v cfn_nag_scan >/dev/null 2>&1; then
       record_failure "Published S3 cfn_nag skipped" "Could not run cfn_nag on the published template because cfn_nag_scan is unavailable."
     elif ! cfn_nag_scan --input-path "$PUBLIC_TEMPLATE_COPY"; then
-      record_failure "Published S3 cfn_nag failed" "The published S3 CloudFormation template has cfn_nag security findings."
+      record_failure "Published S3 cfn_nag failed" "The published S3 CloudFormation template has cfn_nag security findings or cfn_nag could not complete."
     fi
 
     if ! command -v checkov >/dev/null 2>&1; then

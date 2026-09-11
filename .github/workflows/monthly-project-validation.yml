@@ -1,9 +1,17 @@
-name: Monthly Project Validation
+name: Project Validation
 
 on:
   workflow_dispatch:
+  push:
+    branches-ignore:
+      - "automated/monthly-project-autofixes"
+      - "automated/monthly-project-autofixes/**"
   schedule:
     - cron: "17 3 1 * *"
+
+concurrency:
+  group: project-validation-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -28,7 +36,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ruby
+          ruby-version: "3.3"
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4
@@ -62,10 +70,10 @@ jobs:
 
       - name: Run safe auto-fixes
         env:
-          AUTOFIX_SUMMARY: ${{ runner.temp }}/monthly-autofix-summary.md
+          AUTOFIX_SUMMARY: ${{ runner.temp }}/autofix-summary.md
         run: ./ci_cd/autofix-projects.sh
 
-      - name: Run monthly project validation
+      - name: Run project validation
         id: validation
         continue-on-error: true
         run: ./ci_cd/validate-projects.sh
@@ -77,8 +85,8 @@ jobs:
         with:
           commit-message: Apply monthly validation auto-fixes
           title: Apply monthly validation auto-fixes
-          body-path: ${{ runner.temp }}/monthly-autofix-summary.md
-          branch: automated/monthly-project-autofixes
+          body-path: ${{ runner.temp }}/autofix-summary.md
+          branch: automated/monthly-project-autofixes/${{ github.ref_name }}
           delete-branch: true
           add-paths: |
             ECS_Fargate_CWMetrics/**/*.tf
